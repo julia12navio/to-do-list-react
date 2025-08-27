@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from "react";
 import "./ToDoList.css";
 
-const STORAGE_KEY = "todo-tareas";
+const STORAGE = "todo-tareas";
 
 function ToDoList() {
     const [tarea, setTarea] = useState("");
     const [tareas, setTareas] = useState(() => {
         try {
-            const raw = localStorage.getItem(STORAGE_KEY);
+            const raw = localStorage.getItem(STORAGE);
             return raw ? JSON.parse(raw) : [];
         } catch {
             return [];
@@ -16,7 +16,7 @@ function ToDoList() {
 
     useEffect(() => {
         try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(tareas));
+            localStorage.setItem(STORAGE, JSON.stringify(tareas));
         } catch {
 
         }
@@ -26,12 +26,23 @@ function ToDoList() {
         e.preventDefault();
         const texto = tarea.trim();
         if (!texto) return;
-        setTareas((prev) => [...prev, texto]);
+        const nueva = {
+            id: crypto.randomUUID(),
+            texto,
+            done: false,
+        }
+        setTareas((prev) => [...prev, nueva]);
         setTarea("");
     }
 
-    function eliminarTarea(idx) {
-        setTareas((prev) => prev.filter((_, i) => i !== idx));
+    function toggleDone(id) {
+        setTareas(prev =>
+            prev.map(t => (t.id === id ? { ...t, done: !t.done } : t))
+        );
+    }
+
+    function eliminarTarea(id) {
+        setTareas((prev) => prev.filter((t) => t.id !== id));
     }
 
 
@@ -69,22 +80,25 @@ function ToDoList() {
                                 No hay tareas, añadir tareas
                             </p>
                         ) : (
-                            tareas.map((t, idx) => (
+                            tareas.map((t) => (
                                 <li
-                                    key={idx}
+                                    key={t.id}
                                     className="list-group-item d-flex justify-content-between align-items-center list-group-item-action"
                                 >
                                     <div>
                                         <input
                                             className="form-check-input me-2"
                                             type="checkbox"
-                                            id={`checkbox-${idx}`}
+                                            id={`checkbox-${t.id}`}
+                                            checked={t.done}
+                                            onChange={() => toggleDone(t.id)}
                                         />
                                         <label
                                             className="form-check-label"
-                                            htmlFor={`checkbox-${idx}`}
+                                            htmlFor={`checkbox-${t.id}`}
+                                            style={{ textDecoration: t.done ? "line-through" : "none" }}
                                         >
-                                            {t}
+                                            {t.texto}
                                         </label>
                                     </div>
 
@@ -92,7 +106,7 @@ function ToDoList() {
                                     <button
                                         type="button"
                                         className="btn btn-sm btn-outline-danger d-none"
-                                        onClick={() => eliminarTarea(idx)}
+                                        onClick={() => eliminarTarea(t.id)}
                                     >
                                         ×
                                     </button>
